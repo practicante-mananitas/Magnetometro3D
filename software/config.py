@@ -1,13 +1,14 @@
-# ---------- ESP32 ----------
-PUERTO_SENSOR = "COM5"      # Cambia por tu puerto
+PUERTO_SENSOR = "COM7"
 BAUD_SENSOR = 115200
 
-# ---------- Impresora ----------
-PUERTO_IMPRESORA = "COM6"   # Cambia por el puerto real
+PUERTO_IMPRESORA = "COM5"
 BAUD_IMPRESORA = 115200
 
-# ---------- Escaneo ----------
-PASO = 1
-ALTURA = 10
-X_MAX = 100
-Y_MAX = 100
+PASO = 5
+ALTURA = 20
+
+X_INICIO = 20
+Y_INICIO = 20
+
+X_MAX = 60
+Y_MAX = 60

@@ -1,8 +1,11 @@
 from sensor import Sensor
 from printer import Printer
+from config import *
+
 import random
 import csv
 import os
+import time
 
 def iniciar():
 
@@ -12,11 +15,13 @@ def iniciar():
     usar_simulacion = not sensor.conectar()
 
     if usar_simulacion:
-        print("Entrando en MODO SIMULACIÓN\n")
+        print("\n===== MODO SIMULACIÓN =====\n")
     else:
-        print("ESP32 conectado\n")
+        print("\n===== ESP32 CONECTADO =====\n")
 
     printer.home()
+
+    print("Iniciando escaneo centrado...\n")
 
     os.makedirs("../datos", exist_ok=True)
 
@@ -24,18 +29,34 @@ def iniciar():
 
         escritor = csv.writer(archivo)
 
-        escritor.writerow(["X", "Y", "Z", "Bx", "By", "Bz"])
+        escritor.writerow([
+            "X",
+            "Y",
+            "Z",
+            "Bx",
+            "By",
+            "Bz",
+            "Magnitud"
+        ])
 
-        for y in range(5):
+        for y in range(Y_INICIO, Y_MAX + 1, PASO):
 
-            if y % 2 == 0:
-                recorrido = range(5)
+            # Recorrido serpiente centrado
+            if ((y - Y_INICIO) // PASO) % 2 == 0:
+
+                recorrido = range(X_INICIO, X_MAX + 1, PASO)
+
             else:
-                recorrido = range(4, -1, -1)
+
+                recorrido = range(X_MAX, X_INICIO - 1, -PASO)
 
             for x in recorrido:
 
-                printer.mover(x, y, 10)
+                printer.mover(x, y, ALTURA)
+
+                printer.esperar_movimiento()
+
+                time.sleep(0.2)
 
                 if usar_simulacion:
 
@@ -52,14 +73,24 @@ def iniciar():
 
                     bx, by, bz = dato
 
-                escritor.writerow([x, y, 10, bx, by, bz])
+                B = (bx**2 + by**2 + bz**2) ** 0.5
+
+                escritor.writerow([
+                    x,
+                    y,
+                    ALTURA,
+                    bx,
+                    by,
+                    bz,
+                    B
+                ])
 
                 print(
-                    f"X={x:2}  Y={y:2}  "
-                    f"Bx={bx:7.2f}  "
-                    f"By={by:7.2f}  "
-                    f"Bz={bz:7.2f}"
+                    f"X={x:3}  "
+                    f"Y={y:3}  "
+                    f"B={B:7.2f} µT"
                 )
 
-    print("\nEscaneo terminado.")
-    print("Archivo guardado en datos/escaneo.csv")
+    print("\n===============================")
+    print("Escaneo terminado correctamente")
+    print("===============================\n")

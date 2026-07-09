@@ -20,13 +20,15 @@ class Sensor:
             # Esperar a que el ESP32 reinicie
             time.sleep(2)
 
-            # Limpiar el buffer (por ejemplo el mensaje "READY")
+            # Limpiar el mensaje "READY"
             self.esp.reset_input_buffer()
 
-        except SerialException:
+            print(f"ESP32 conectado en {PUERTO_SENSOR}")
+
+        except SerialException as e:
 
             print(f"\n[ERROR] No se pudo abrir el puerto {PUERTO_SENSOR}")
-            print("Verifica que el ESP32 esté conectado.\n")
+            print(e)
 
     def conectar(self):
 
@@ -37,7 +39,11 @@ class Sensor:
 
         self.esp.write(b"PING\n")
 
-        respuesta = self.esp.readline().decode().strip()
+        time.sleep(0.2)
+
+        respuesta = self.esp.readline().decode(errors="ignore").strip()
+
+        print("Respuesta ESP32:", respuesta)
 
         return respuesta == "PONG"
 
@@ -50,7 +56,9 @@ class Sensor:
 
         self.esp.write(b"READ\n")
 
-        linea = self.esp.readline().decode().strip()
+        time.sleep(0.2)
+
+        linea = self.esp.readline().decode(errors="ignore").strip()
 
         try:
 
@@ -59,6 +67,8 @@ class Sensor:
             return float(bx), float(by), float(bz)
 
         except:
+
+            print("Lectura inválida:", linea)
 
             return None
 
