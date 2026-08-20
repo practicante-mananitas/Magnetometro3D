@@ -1,0 +1,862 @@
+<div class="hud">
+
+  <header class="hud-header">
+
+    <div>
+      <h1>Magnetómetro 3D</h1>
+      <p>Panel de control de escaneo magnético</p>
+    </div>
+
+    <div class="status">
+      <span
+        class="status-dot"
+        [class.scanning]="scanning">
+      </span>
+
+      @if (scanning) {
+        ESCANEANDO
+      } @else {
+        SISTEMA LISTO
+      }
+    </div>
+
+  </header>
+
+
+  <main class="dashboard">
+
+    <!-- =========================
+         CONFIGURACIÓN
+         ========================= -->
+
+    <section class="panel config-panel">
+
+      <h2>Configuración del imán</h2>
+
+      <div class="form-grid">
+
+        <label>
+          Ancho X (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="magnetWidth"
+            [disabled]="scanning">
+        </label>
+
+        <label>
+          Largo Y (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="magnetLength"
+            [disabled]="scanning">
+        </label>
+
+        <label>
+          Alto Z (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="magnetHeight"
+            [disabled]="scanning">
+        </label>
+
+      </div>
+
+
+      <!-- =========================
+           POSICIÓN DEL IMÁN
+           ========================= -->
+
+      <h2>Posición del imán</h2>
+
+      <div class="form-grid">
+
+        <label>
+          Posición X (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="magnetX"
+            [disabled]="scanning">
+        </label>
+
+        <label>
+          Posición Y (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="magnetY"
+            [disabled]="scanning">
+        </label>
+
+        <label>
+          Altura de la base Z (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="baseZ"
+            [disabled]="scanning">
+        </label>
+
+      </div>
+
+
+      <!-- =========================
+           CONFIGURACIÓN DEL ESCANEO
+           ========================= -->
+
+      <h2>Configuración del escaneo</h2>
+
+      <div class="form-grid">
+
+        <label>
+          Margen lateral (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="margin"
+            [disabled]="scanning">
+        </label>
+
+        <label>
+          Distancia sensor-imán (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="sensorDistance"
+            [disabled]="scanning">
+        </label>
+
+        <label>
+          Paso entre puntos (mm)
+
+          <input
+            type="number"
+            [(ngModel)]="step"
+            [disabled]="scanning">
+        </label>
+
+      </div>
+
+
+      <button
+        class="primary-button"
+        (click)="calcularArea()"
+        [disabled]="scanning">
+
+        Calcular área automáticamente
+
+      </button>
+
+
+      <!-- =========================
+           VALIDACIÓN DE SEGURIDAD
+           ========================= -->
+
+      <div
+        class="safety-panel"
+        [class.safe]="trajectorySafe"
+        [class.unsafe]="
+          !trajectorySafe &&
+          safetyErrors.length > 0
+        "
+      >
+
+        <div class="safety-header">
+
+          @if (trajectorySafe) {
+
+            <strong>
+              ✓ Trayectoria segura
+            </strong>
+
+          } @else if (safetyErrors.length > 0) {
+
+            <strong>
+              ⚠ Trayectoria no segura
+            </strong>
+
+          } @else {
+
+            <strong>
+              Validación pendiente
+            </strong>
+
+          }
+
+        </div>
+
+
+        <p>
+          {{ safetyMessage }}
+        </p>
+
+
+        <div class="safe-limits">
+
+          <span>
+            X permitido:
+            {{ xMinSafe }}
+            →
+            {{ xMaxSafe }} mm
+          </span>
+
+          <span>
+            Y permitido:
+            {{ yMinSafe }}
+            →
+            {{ yMaxSafe }} mm
+          </span>
+
+          <span>
+            Z permitido:
+            {{ zMinSafe }}
+            →
+            {{ zMaxSafe }} mm
+          </span>
+
+        </div>
+
+
+        @if (safetyErrors.length > 0) {
+
+          <div class="safety-errors">
+
+            @for (
+              error of safetyErrors;
+              track error
+            ) {
+
+              <div>
+                • {{ error }}
+              </div>
+
+            }
+
+          </div>
+
+        }
+
+      </div>
+
+
+      <!-- =========================
+           ÁREA CALCULADA
+           ========================= -->
+
+      @if (points.length > 0) {
+
+        <div class="scan-summary">
+
+          <div>
+            <span>X</span>
+
+            <strong>
+              {{ xStart }} → {{ xEnd }} mm
+            </strong>
+          </div>
+
+          <div>
+            <span>Y</span>
+
+            <strong>
+              {{ yStart }} → {{ yEnd }} mm
+            </strong>
+          </div>
+
+          <div>
+            <span>Z de escaneo</span>
+
+            <strong>
+              {{ z }} mm
+            </strong>
+          </div>
+
+          <div>
+            <span>Distancia al imán</span>
+
+            <strong>
+              {{ sensorDistance }} mm
+            </strong>
+          </div>
+
+          <div>
+            <span>Paso</span>
+
+            <strong>
+              {{ step }} mm
+            </strong>
+          </div>
+
+          <div>
+            <span>Puntos</span>
+
+            <strong>
+              {{ totalPoints }}
+            </strong>
+          </div>
+
+        </div>
+
+
+        <div class="control-buttons">
+
+          <button
+            class="start-button"
+            (click)="iniciarEscaneo()"
+            [disabled]="
+              scanning ||
+              !trajectorySafe
+            "
+          >
+
+            ▶ Iniciar escaneo
+
+          </button>
+
+          <button
+            class="stop-button"
+            (click)="detenerEscaneo()"
+            [disabled]="!scanning">
+
+            ■ Detener
+
+          </button>
+
+        </div>
+
+      }
+
+    </section>
+
+
+    <!-- =========================
+         MAPA
+         ========================= -->
+
+    <section class="panel map-panel">
+
+      <div class="map-header">
+
+        <div>
+
+          <h2>
+            @if (viewMode === 'points') {
+              Área de escaneo
+            } @else {
+              Superficie 3D
+            }
+          </h2>
+
+          @if (points.length > 0) {
+
+            <p>
+              {{ totalPoints }} puntos ·
+              Z {{ z }} mm
+            </p>
+
+          }
+
+        </div>
+
+
+        @if (points.length > 0) {
+
+          <div class="coordinates">
+
+            X {{ xStart }} → {{ xEnd }}
+
+            <span>•</span>
+
+            Y {{ yStart }} → {{ yEnd }}
+
+          </div>
+
+        }
+
+      </div>
+
+
+      <!-- =========================
+           SELECTOR DE VISTA
+           ========================= -->
+
+      @if (points.length > 0) {
+
+        <div class="map-view-controls">
+
+          <button
+            class="map-view-button"
+            [class.active]="viewMode === 'points'"
+            (click)="mostrarMapaPuntos()"
+          >
+            Mapa de puntos
+          </button>
+
+          <button
+            class="map-view-button"
+            [class.active]="viewMode === 'surface'"
+            (click)="mostrarSuperficie3D()"
+            [disabled]="measuredPoints.length === 0"
+          >
+            Superficie 3D
+          </button>
+
+        </div>
+
+      }
+
+
+      <!-- =========================
+           MAPA DE PUNTOS
+           ========================= -->
+
+      @if (viewMode === 'points') {
+
+        <div class="scan-area">
+
+          @if (points.length > 0) {
+
+            <div
+              class="point-grid"
+
+              [style.grid-template-columns]="
+                'repeat(' +
+                ((xEnd - xStart) / step + 1) +
+                ', minmax(25px, 1fr))'
+              "
+            >
+
+              @for (
+                point of points;
+                track point.index
+              ) {
+
+                <div
+                  class="scan-point"
+
+                  [class.measured]="
+                    point.measured
+                  "
+
+                  [class.intensity-very-low]="
+                    point.measured &&
+                    point.b !== null &&
+                    point.b < 0.5
+                  "
+
+                  [class.intensity-low]="
+                    point.measured &&
+                    point.b !== null &&
+                    point.b >= 0.5 &&
+                    point.b < 1
+                  "
+
+                  [class.intensity-medium]="
+                    point.measured &&
+                    point.b !== null &&
+                    point.b >= 1 &&
+                    point.b < 1.5
+                  "
+
+                  [class.intensity-high]="
+                    point.measured &&
+                    point.b !== null &&
+                    point.b >= 1.5 &&
+                    point.b < 2
+                  "
+
+                  [class.intensity-very-high]="
+                    point.measured &&
+                    point.b !== null &&
+                    point.b >= 2
+                  "
+
+                  [class.current]="
+                    point.index === activePoint &&
+                    scanning
+                  "
+
+                  [title]="
+                    point.measured &&
+                    point.b !== null &&
+                    point.bx !== null &&
+                    point.by !== null &&
+                    point.bz !== null
+                      ?
+                        'X: ' +
+                        point.x +
+                        ' mm | Y: ' +
+                        point.y +
+                        ' mm | Z: ' +
+                        z +
+                        ' mm | Bx: ' +
+                        point.bx.toFixed(4) +
+                        ' mT | By: ' +
+                        point.by.toFixed(4) +
+                        ' mT | Bz: ' +
+                        point.bz.toFixed(4) +
+                        ' mT | B: ' +
+                        point.b.toFixed(4) +
+                        ' mT'
+                      :
+                        'X: ' +
+                        point.x +
+                        ' mm | Y: ' +
+                        point.y +
+                        ' mm | Z: ' +
+                        z +
+                        ' mm'
+                  "
+                >
+
+                  <span></span>
+
+                </div>
+
+              }
+
+            </div>
+
+          } @else {
+
+            <div class="empty-map">
+
+              <span>
+                Mapa magnético
+              </span>
+
+              <p>
+                Ingresa las dimensiones y posición
+                del imán para calcular automáticamente
+                el área de escaneo.
+              </p>
+
+            </div>
+
+          }
+
+        </div>
+
+      }
+
+
+      <!-- =========================
+           SUPERFICIE 3D
+           ========================= -->
+
+      @if (viewMode === 'surface') {
+
+        <div class="surface-container">
+
+          @if (measuredPoints.length > 0) {
+
+            <div
+              id="surface3d"
+              class="surface-plot">
+            </div>
+
+          } @else {
+
+            <div class="empty-map">
+
+              <span>
+                Superficie 3D
+              </span>
+
+              <p>
+                Realiza al menos una medición
+                para generar la superficie.
+              </p>
+
+            </div>
+
+          }
+
+        </div>
+
+      }
+
+
+      <!-- =========================
+           PROGRESO
+           ========================= -->
+
+      @if (points.length > 0) {
+
+        <div class="progress-section">
+
+          <div class="progress-info">
+
+            <span>
+              Progreso
+            </span>
+
+            <strong>
+              {{ currentPoint }}
+              /
+              {{ totalPoints }}
+              ·
+              {{ progress }}%
+            </strong>
+
+          </div>
+
+          <div class="progress-bar">
+
+            <div
+              class="progress-fill"
+              [style.width.%]="progress">
+            </div>
+
+          </div>
+
+        </div>
+
+      }
+
+
+      <!-- =========================
+           ESTADÍSTICAS
+           ========================= -->
+
+      @if (measuredPoints.length > 0) {
+
+        <div class="scan-stats">
+
+          <div>
+            <span>
+              B mínima
+            </span>
+
+            <strong>
+              {{
+                minB !== null
+                  ? minB.toFixed(4)
+                  : '--'
+              }}
+              mT
+            </strong>
+          </div>
+
+
+          <div>
+            <span>
+              B promedio
+            </span>
+
+            <strong>
+              {{
+                averageB !== null
+                  ? averageB.toFixed(4)
+                  : '--'
+              }}
+              mT
+            </strong>
+          </div>
+
+
+          <div>
+            <span>
+              B máxima
+            </span>
+
+            <strong>
+              {{
+                maxB !== null
+                  ? maxB.toFixed(4)
+                  : '--'
+              }}
+              mT
+            </strong>
+          </div>
+
+        </div>
+
+      }
+
+
+      <!-- =========================
+           LEYENDA DE INTENSIDAD
+           ========================= -->
+
+      @if (
+        points.length > 0 &&
+        viewMode === 'points'
+      ) {
+
+        <div class="magnetic-legend">
+
+          <div class="legend-title">
+            Intensidad del campo magnético
+          </div>
+
+          <div class="legend-items">
+
+            <div class="legend-item">
+
+              <span
+                class="legend-color very-low">
+              </span>
+
+              <div>
+                <strong>Muy baja</strong>
+                <small>&lt; 0.5 mT</small>
+              </div>
+
+            </div>
+
+
+            <div class="legend-item">
+
+              <span
+                class="legend-color low">
+              </span>
+
+              <div>
+                <strong>Baja</strong>
+                <small>0.5 – 1.0 mT</small>
+              </div>
+
+            </div>
+
+
+            <div class="legend-item">
+
+              <span
+                class="legend-color medium">
+              </span>
+
+              <div>
+                <strong>Media</strong>
+                <small>1.0 – 1.5 mT</small>
+              </div>
+
+            </div>
+
+
+            <div class="legend-item">
+
+              <span
+                class="legend-color high">
+              </span>
+
+              <div>
+                <strong>Alta</strong>
+                <small>1.5 – 2.0 mT</small>
+              </div>
+
+            </div>
+
+
+            <div class="legend-item">
+
+              <span
+                class="legend-color very-high">
+              </span>
+
+              <div>
+                <strong>Muy alta</strong>
+                <small>≥ 2.0 mT</small>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      }
+
+    </section>
+
+  </main>
+
+
+  <!-- =========================
+       DATOS DEL SENSOR
+       ========================= -->
+
+  <footer class="hud-footer">
+
+    <div>
+
+      Estado:
+
+      <strong>
+
+        @if (scanning) {
+          ESCANEANDO
+        } @else {
+          LISTO
+        }
+
+      </strong>
+
+    </div>
+
+
+    <div>
+
+      Bx:
+
+      <strong>
+        {{
+          bx !== null
+            ? bx.toFixed(4)
+            : '--'
+        }}
+      </strong>
+
+    </div>
+
+
+    <div>
+
+      By:
+
+      <strong>
+        {{
+          by !== null
+            ? by.toFixed(4)
+            : '--'
+        }}
+      </strong>
+
+    </div>
+
+
+    <div>
+
+      Bz:
+
+      <strong>
+        {{
+          bz !== null
+            ? bz.toFixed(4)
+            : '--'
+        }}
+      </strong>
+
+    </div>
+
+
+    <div>
+
+      B:
+
+      <strong>
+        {{
+          b !== null
+            ? b.toFixed(4)
+            : '--'
+        }}
+      </strong>
+
+    </div>
+
+  </footer>
+
+</div>

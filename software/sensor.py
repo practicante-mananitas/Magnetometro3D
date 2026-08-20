@@ -39,7 +39,7 @@ class Sensor:
 
         self.esp.write(b"PING\n")
 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         respuesta = self.esp.readline().decode(errors="ignore").strip()
 
@@ -56,7 +56,7 @@ class Sensor:
 
         self.esp.write(b"READ\n")
 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         linea = self.esp.readline().decode(errors="ignore").strip()
 
